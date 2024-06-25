@@ -1,10 +1,10 @@
 # SQLFormalSemantics
 
-A Coq mechanized executable formal semantics for realistic SQL queries
+A Coq mechanized executable formal semantics for realistic SQL queries.
 
 
 ## Compilation
-This work compiles with Coq 8.11.2:
+This work compiles with Coq 8.15.0:
 ```
 make
 make install
