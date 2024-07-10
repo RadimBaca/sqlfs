@@ -23,10 +23,10 @@ Notation r_mid := (Attr_Z "r.mid").
 Notation runtime := (Attr_Z "runtime").
 Notation rank := (Attr_Z "rank").
 Notation r_pid := (Attr_Z "r.pid").
-Notation d_mid := (Attr_Z "mid").
+Notation d_mid := (Attr_Z "d.mid").
 Notation d_pid := (Attr_Z "d.pid").
 Notation p_pid := (Attr_Z "p.pid").
-Notation m_mid := (Attr_Z "mid").
+Notation m_mid := (Attr_Z "m.mid").
 
 
 Definition persons := Fset.mk_set (A TNull) (p_pid :: firstname :: lastname :: nil).
