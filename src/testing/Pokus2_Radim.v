@@ -7,7 +7,7 @@ Require Import Relations SetoidList List String Ascii Bool ZArith NArith.
 Require Import Bool3 FlatData ListFacts OrderedSet
         FiniteSet FiniteBag FiniteCollection Tree Formula Sql.
 
-Require Import Values TuplesImpl GenericInstance SqlSyntax SqlAlgebra SqlExt SqlAlgebraExt.
+Require Import Values TuplesImpl GenericInstance SqlSyntax SqlAlgebra.
 
 Import Tuple.
 Import NullValues. 
@@ -23,10 +23,10 @@ Notation r_mid := (Attr_Z "r.mid").
 Notation runtime := (Attr_Z "runtime").
 Notation rank := (Attr_Z "rank").
 Notation r_pid := (Attr_Z "r.pid").
-Notation d_mid := (Attr_Z "d.mid").
+Notation d_mid := (Attr_Z "mid").
 Notation d_pid := (Attr_Z "d.pid").
 Notation p_pid := (Attr_Z "p.pid").
-Notation m_mid := (Attr_Z "m.mid").
+Notation m_mid := (Attr_Z "mid").
 
 
 Definition persons := Fset.mk_set (A TNull) (p_pid :: firstname :: lastname :: nil).
@@ -148,6 +148,21 @@ Compute show_tuple TNull r1.
 We pass the TNull implementation to the call of each function wotking with the interface. *)
 
 
+(* The following code test the Fset implementation on numbers. *)
+Search (N -> N -> comparison).
+Definition Oset_nat : Oset.Rcd N.
+Proof.
+split with N.compare. 
+- intros a1 a2; unfold N.compare.
+Admitted.
+Definition Fset_nat := Fset.build Oset_nat.
+Definition nat_set1 := Fset.mk_set Fset_nat (1::2::nil).
+Check nat_set1.
+Compute Fset.elements Fset_nat nat_set1.
+
+
+
+
 
 Definition create_schema :=
 create_table
@@ -172,6 +187,54 @@ Definition db_movie := create_db roles directors people movies.
 
 
 
+Definition v1 : value := Value_bool (Some true).
+(* Definition v2 : value := Value_string (Some "retezec"). *)
+Compute show_state_ TNull db_movie.
+
+(* Q1 - NaturalJoin(director, movie)*)
+Definition Q1 := Q_NaturalJoin (Q_Table TNull (Rel "director")) (Q_Table TNull (Rel "movie")).
+
+Definition basesort_map := _basesort TNull db_movie.
+Definition database_map := _instance TNull db_movie.
+(* Notation basessort := _basesort TNull db_movie. -- Proc toto nemohu udelat? *)
+Definition bool_type := (Bool.b (Tuple.B TNull)).
+Definition sql_true_formula := Sql_True TNull (sql_query TNull relname).
+
+
+ Compute Fset.elements (A TNull) (sort basesort_map Q1).  (* Seznam promennych Q1 *)
+Compute Fset.elements (A TNull) (free_variables_q basesort_map Q1).  (* Seznam volnych promennych Q1 *)
+
+(* Check eval_query basesort_map database_map (Bool.b (Tuple.B TNull)) (env TNull) Q1. *)
+
+Compute eval_query basesort_map database_map _ _ _ Q1.
+
+Compute alg_query_to_sql basesort_map  _ _ _ Q1.
+
+
+(* Support definitions  *)
+Definition AttrExpr (a : (attribute TNull)):= A_Expr _ (F_Dot _ a).
+Definition ConstExpr (v : Z):= A_Expr TNull (F_Constant TNull (Value_Z (Some v))).
+Definition FromWithoutAlias (name : string):= From_Item (Sql_Table TNull (Rel name)) (Att_Ren_Star TNull).
+
+
+(* Q2  - Sigma_{year = 2001}(movie) *)
+Definition Pr2 := (Predicate "=") : predicate TNull.
+Definition Terms2 := AttrExpr year::ConstExpr 2001%Z::nil.  
+Definition Formula1 := Sql_Pred (query TNull relname) Pr2 Terms2.
+Definition Q2 := Q_Sigma Formula1
+                    (Q_Table TNull (Rel "movie")).
+
+Compute eval_query basesort_map database_map _ _ _ Q2.
+(* Compute well_formed_q  basesort_map _ Q2. *)
+
+(* Bool 3, tree of query *)
+
+Compute Bool.andb (B TNull) true3 true3.
+Compute Bool.andb (B TNull) true3 unknown3.
+Check tree_of_query.
+Compute tree_of_query Q2.
+Compute alg_query_to_sql basesort_map  _ _ _ Q2.
+
 (* Freshes *)
 Definition first_attr (la : list (attribute TNull)) : attribute TNull := 
     match la with
@@ -182,27 +245,11 @@ Definition first_attr (la : list (attribute TNull)) : attribute TNull :=
 Definition attributes := title :: lastname :: m_mid :: year :: nil.
 (* Compute freshes TNull first_attr 4 attributes.  *)
 
-
-(* Support definitions  *)
-Definition AttrExpr (a : (attribute TNull)):= A_Expr _ (F_Dot _ a).
-Definition ConstExpr (v : Z):= A_Expr TNull (F_Constant TNull (Value_Z (Some v))).
-Definition FromWithoutAlias (tablename : string):= From_Item_Ext (Sql_Table_Ext TNull (Rel tablename)) (Att_Ren_Star TNull).
-Definition JoinWithoutAlias (tablename : string) f := Join_Item (Inner_Join) (Sql_Table_Ext TNull (Rel tablename)) (Att_Ren_Star TNull) f.
-
-Definition basesort_map := _basesort TNull db_movie.
-Definition database_map := _instance TNull db_movie.
-(* Notation basessort := _basesort TNull db_movie. -- Proc toto nemohu udelat? *)
-Definition bool_type := (Bool.b (Tuple.B TNull)).
-Definition sql_true_formula := Sql_True TNull (sql_query_ext TNull relname).
-
-
-
 (* Q3 - SELECT * FROM Movie WHERE year = 2001 *)
 Definition p3 := (Values.Predicate "="): predicate TNull.
-Definition sql3 : sql_query_ext TNull relname := Sql_Select_Ext (Select_Star TNull)
-    (FromWithoutAlias "movie")
-    nil
-    (Sql_Pred (sql_query_ext TNull relname) p3
+Definition sql3 := Sql_Select (Select_Star TNull)
+    ((FromWithoutAlias "movie"):: nil)
+    (Sql_Pred (sql_query TNull relname) p3
       (A_Expr TNull (F_Dot TNull year)
         :: A_Expr TNull (F_Constant TNull (Value_Z (Some 2001%Z)))
           :: nil))
@@ -210,33 +257,85 @@ Definition sql3 : sql_query_ext TNull relname := Sql_Select_Ext (Select_Star TNu
     sql_true_formula.
 
 
-Compute eval_sql_query_ext basesort_map database_map _ _ _ sql3.
+Compute eval_sql_query basesort_map database_map _ _ _ sql3.
 
 
+(* Q4 - SELECT * FROM (SELECT title, title FROM Movie) *)
+Definition select_as_attr (attr : attribute TNull):= (Select_As TNull (AttrExpr attr) attr).
+Definition select_list := (Select_List TNull (_Select_List TNull ((select_as_attr title)::(select_as_attr title)::nil))).
+Definition sub_select4 := Sql_Select select_list
+  ((FromWithoutAlias "movie"):: nil)
+  sql_true_formula
+  (Group_Fine TNull)
+  sql_true_formula.
+Definition sql4 := Sql_Select (Select_Star TNull)
+    (From_Item sub_select4 (Att_Ren_Star TNull):: nil)
+    sql_true_formula
+    (Group_Fine TNull)
+    sql_true_formula.
+    
+Compute eval_sql_query basesort_map database_map _ _ _ sub_select4.
+Compute eval_sql_query basesort_map database_map _ _ _ sql4.
+Compute Fset.elements _ (sql_sort basesort_map sub_select4).
 
-(* Q6 - SELECT * FROM Movie JOIN Director ON m_mid = d_mid *)
+
+(* TODO: 
+- napsat sql_formula se zavislym poddotazem a volnyma promennyma
+- testing wellformed
+*)
+
+
+(* Q5 - SELECT * FROM Movie WHERE year = "2001" *)
+(* 
+SQL query with incorrect data types in predicate
+*)
+Definition p5 := (Values.Predicate "="): predicate TNull.
+Definition sql5 := Sql_Select (Select_Star TNull)
+    ((FromWithoutAlias "movie"):: nil)
+    (Sql_Pred (sql_query TNull relname) p5
+      (A_Expr TNull (F_Dot TNull year)
+        :: A_Expr TNull (F_Constant TNull (Value_string (Some "2001"%string)))
+          :: nil))
+    (Group_Fine TNull)
+    sql_true_formula.
+
+Compute eval_sql_query basesort_map database_map _ _ nil sql5.
+
+(* Q6 - SELECT * FROM Movie, Director WHERE m_mid = d_mid *)
 Definition p6 := (Values.Predicate "="): predicate TNull.
-Definition f6 := Sql_Pred (sql_query_ext TNull relname) p6
+Definition f6 := Sql_Pred (sql_query TNull relname) p6
   (AttrExpr d_mid :: AttrExpr m_mid :: nil).
-Definition sql6 := Sql_Select_Ext 
+Definition sql6 := Sql_Select 
   (Select_Star TNull)
-  (FromWithoutAlias "movie")
-  ((JoinWithoutAlias "director" f6):: nil)
+  ((FromWithoutAlias "movie")::(FromWithoutAlias "director"):: nil)
+  f6
+  (Group_Fine TNull)
+  sql_true_formula.
+  
+Compute eval_sql_query basesort_map database_map _ _ nil sql6.
+
+Definition q6 := sql_query_to_alg basesort_map sql6.
+Compute q6.
+
+
+
+(* Q7 - SELECT * FROM Movie, Director *)
+Definition sql7 := Sql_Select 
+  (Select_Star TNull)
+  ((FromWithoutAlias "movie")::(FromWithoutAlias "director"):: nil)
   sql_true_formula
   (Group_Fine TNull)
   sql_true_formula.
   
-Compute eval_sql_query_ext basesort_map database_map _ _ nil sql6.
+Compute eval_sql_query basesort_map database_map _ _ nil sql7.
 
-Compute sql_query_ext_to_alg basesort_map sql6.
+Compute sql_query_to_alg basesort_map sql7.
 
+Definition q7 := Q_Sigma (Sql_True TNull (query TNull relname))
+(Q_Sigma (Sql_True TNull (query TNull relname))
+   (Q_NaturalJoin (Q_Table TNull (Rel "movie"))
+      (Q_NaturalJoin (Q_Table TNull (Rel "director"))
+         (Q_Empty_Tuple TNull relname)))).
 
-(* testing N_Q_NaturalJoin *)
-
-Definition p7 := (Values.Predicate "="): predicate TNull.
-Definition f7 := Sql_Pred (query TNull relname) p7 
-  (AttrExpr d_mid :: AttrExpr m_mid :: nil).
-
-Definition j7 := sql_query_ext_to_alg basesort_map (Sql_Table_Ext TNull (Rel "director")).
-Definition fr7 := sql_query_ext_to_alg basesort_map (Sql_Table_Ext TNull (Rel "movie")).
-Compute N_Q_NaturalJoin fr7 ((f7, j7) :: nil).
+         
+Compute eval_query basesort_map database_map _ _ _ q7.
