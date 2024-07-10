@@ -38,6 +38,7 @@ data/flat/FlatData.v
 data/sql/Sql.v
 data/sql/SqlExt.v
 data/sql/SqlAlgebra.v
+data/sql/SqlAlgebraExt.v
 data/proof_of_concept/TuplesImpl.v
 data/proof_of_concept/Values.v
 data/proof_of_concept/GenericInstance.v
