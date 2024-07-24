@@ -219,38 +219,103 @@ with eval_sql_ext_join_item env ji br :=
 (** * transformation of sql_query_ext into the sql_query *)
 
 
-
-
-(* 
-
 Fixpoint sql_query_ext_to_sql_query (sq : sql_query_ext) : sql_query T relname :=
   let sql_formula_ext_to_query :=
-    (fix sql_formula_ext_to_query f  :=
+    (fix sql_formula_ext_to_query f :=
        match f with
-       | Sql_Conj a f1 f2 => Sql_Conj a (sql_formula_ext_to_query f1) (sql_formula_ext_to_query f2)
+       | Sql_Conj a f1 f2 => Sql_Conj a (sql_formula_ext_to_query f1)
+                                        (sql_formula_ext_to_query f2)
        | Sql_Not f => Sql_Not (sql_formula_ext_to_query f)
        | Sql_True _ => Sql_True _
        | Sql_Pred _ p l => Sql_Pred _ p l
        | Sql_Quant _ qtf p l sq => Sql_Quant _ qtf p l (sql_query_ext_to_sql_query sq)
-       | Sql_In _ s sq => Sql_In _ s (sql_query_ext_to_sql_query sq)
+       | Sql_In _ s sq => @Sql_In  T (sql_query T relname) s (sql_query_ext_to_sql_query sq)
        | Sql_Exists _ sq => Sql_Exists _ (sql_query_ext_to_sql_query sq)
-       end) in 
+       end) in
+
+  let from_ext_to_from (fi : sql_from_item_ext) : sql_from_item T relname :=
+      match fi with
+      | From_Item_Ext sq la => From_Item (sql_query_ext_to_sql_query sq) la
+      end in
+
+  let join_to_from (jq : sql_join_item_ext) : sql_from_item T relname :=
+      match jq with
+      | Join_Item jt sq la f => From_Item (sql_query_ext_to_sql_query sq) la
+      end in
+
+  let sql_query_join_to_from fq ljq : list (sql_from_item T relname) :=
+        (from_ext_to_from fq) :: (map join_to_from ljq) in
+
   match sq with
     | Sql_Table_Ext r => Sql_Table T r
-    | Sql_Set_Ext o sq1 sq2 => Sql_Set o (sql_query_ext_to_sql_query sq1) (sql_query_ext_to_sql_query sq2)
+    | Sql_Set_Ext o sq1 sq2 => Sql_Set o (sql_query_ext_to_sql_query sq1)
+                                         (sql_query_ext_to_sql_query sq2)
     | Sql_Select_Ext s lsq jq f1 g f2 =>     
-        Sql_Select s (sql_query_join_to_from lsq jq) (sql_formula_ext_to_query f1) g (sql_formula_ext_to_query f2)
-  end
-with from_ext_to_from (fi : sql_from_item_ext) : sql_from_item T relname :=
+        Sql_Select s (sql_query_join_to_from lsq jq) (sql_formula_ext_to_query f1) g
+                                                     (sql_formula_ext_to_query f2)
+  end.
+
+
+
+(**
+ *  A variant divided into separate definitions;
+ *  separation of recursion
+ *)
+
+Section Sec1.
+
+Variable func : sql_query_ext -> sql_query T relname.
+
+
+Fixpoint sql_formula_ext_to_query f :=
+       match f with
+       | Sql_Conj a f1 f2 => Sql_Conj a (sql_formula_ext_to_query f1)
+                                        (sql_formula_ext_to_query f2)
+       | Sql_Not f => Sql_Not (sql_formula_ext_to_query f)
+       | Sql_True _ => Sql_True _
+       | Sql_Pred _ p l => Sql_Pred _ p l
+       | Sql_Quant _ qtf p l sq => Sql_Quant _ qtf p l (func sq)
+       | Sql_In _ s sq => @Sql_In T (sql_query T relname) s (func sq)
+       | Sql_Exists _ sq => Sql_Exists _ (func sq)
+       end.
+
+Definition from_ext_to_from' (fi : sql_from_item_ext) : sql_from_item T relname :=
   match fi with
-    | From_Item_Ext sq la => From_Item (sql_query_ext_to_sql_query sq) la
-  end
-with join_to_from (jq : sql_join_item_ext) : sql_from_item T relname :=
+    | From_Item_Ext sq la => From_Item (func sq) la
+  end.
+
+Definition join_to_from' (jq : sql_join_item_ext) : sql_from_item T relname :=
   match jq with
-    | Join_Item jt sq la f => From_Item (sql_query_ext_to_sql_query sq) la
-  end
-with sql_query_join_to_from fq ljq : list (sql_from_item T relname) := 
-  (from_ext_to_from fq) :: (map join_to_from ljq). *)
+    | Join_Item jt sq la f => From_Item (func sq) la
+  end.
+
+Definition sql_query_join_to_from fq ljq : list (sql_from_item T relname) :=
+  (from_ext_to_from' fq) :: (map join_to_from' ljq).
+
+
+Definition sql_query_ext_to_sql_query_aux (sq : sql_query_ext) : sql_query T relname :=
+    match sq with
+    | Sql_Table_Ext r => Sql_Table T r
+    | Sql_Set_Ext o sq1 sq2 => Sql_Set o (func sq1) (func sq2)
+    | Sql_Select_Ext s lsq jq f1 g f2 =>
+        Sql_Select s (sql_query_join_to_from lsq jq)
+          (sql_formula_ext_to_query f1) g (sql_formula_ext_to_query f2)
+    end.
+
+End Sec1.
+
+
+Section Sec2.
+
+Variable default_relname : relname.
+
+Fixpoint sql_query_ext_to_sql_query_rec (n : nat) (sq : sql_query_ext) : sql_query T relname
+  := match n with
+     | 0 => Sql_Table T default_relname
+     | S n' => sql_query_ext_to_sql_query_aux (sql_query_ext_to_sql_query_rec n') sq
+     end.
+
+End Sec2.
 
 
 
