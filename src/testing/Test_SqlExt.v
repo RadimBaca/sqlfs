@@ -228,7 +228,12 @@ Definition sql6 := Sql_Select_Ext
   
 Compute eval_sql_query_ext basesort_map database_map _ _ nil sql6.
 
-Compute sql_query_ext_to_alg basesort_map sql6.
+Definition alg_sql6 := sql_query_ext_to_alg basesort_map sql6.
+Compute eval_query basesort_map database_map _ _ _ alg_sql6.
+
+Definition norm_sql6 := sql_query_ext_to_sql_query sql6.
+Compute norm_sql6.
+Compute eval_sql_query basesort_map database_map _ _ nil norm_sql6.
 
 
 (* testing N_Q_NaturalJoin *)
