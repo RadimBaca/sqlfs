@@ -232,6 +232,7 @@ Definition alg_sql6 := sql_query_ext_to_alg basesort_map sql6.
 Compute eval_query basesort_map database_map _ _ _ alg_sql6.
 
 Definition norm_sql6 := sql_query_ext_to_sql_query sql6.
+Compute sql6.
 Compute norm_sql6.
 Compute eval_sql_query basesort_map database_map _ _ nil norm_sql6.
 
