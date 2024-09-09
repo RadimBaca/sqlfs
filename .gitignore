@@ -6,3 +6,4 @@
 .lia.cache
 src/Makefile.conf
 src/.Makefile.d
+src/Makefile
