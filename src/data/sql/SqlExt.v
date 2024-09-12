@@ -249,7 +249,7 @@ Fixpoint sql_query_ext_to_sql_query (sq : sql_query_ext) : sql_query T relname :
   let sql_formula_ext_to_sql_formula :=
     (fix sql_formula_ext_to_sql_formula ljq f : sql_formula T (sql_query T relname) :=
       match ljq with
-      | nil => sql_formula_ext_to_query f
+      | nil => f
       | jq :: tjq => Sql_Conj And_F match jq with
           | Join_Item _ _ _ jf => sql_formula_ext_to_query jf
           end (sql_formula_ext_to_sql_formula tjq f)
@@ -261,7 +261,8 @@ Fixpoint sql_query_ext_to_sql_query (sq : sql_query_ext) : sql_query T relname :
     | Sql_Set_Ext o sq1 sq2 => Sql_Set o (sql_query_ext_to_sql_query sq1)
                                          (sql_query_ext_to_sql_query sq2)
     | Sql_Select_Ext s lsq jq f1 g f2 =>     
-        Sql_Select s (sql_query_join_to_from lsq jq) (sql_formula_ext_to_sql_formula jq f1) g
+        Sql_Select s (sql_query_join_to_from lsq jq) (sql_formula_ext_to_sql_formula jq
+                                                        (sql_formula_ext_to_query f1)) g
                                                      (sql_formula_ext_to_query f2)
   end.
 
