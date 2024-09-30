@@ -7,12 +7,12 @@ Require Import Relations SetoidList List String Ascii Bool ZArith NArith.
 Require Import Bool3 FlatData ListFacts OrderedSet
         FiniteSet FiniteBag FiniteCollection Tree Formula Sql.
 
-Require Import Values TuplesImpl GenericInstance SqlSyntax SqlAlgebra SqlExt SqlAlgebraExt.
+Require Import Values TuplesImpl GenericInstanceExt SqlSyntaxExt SqlAlgebra SqlExt SqlAlgebraExt.
 
 Import Tuple.
 Import NullValues. 
 
-Definition db0 := init_db_ TNull.
+Definition db0 := init_db_ext_ TNull.
 
 Notation year := (Attr_Z "year").
 Notation firstname := (Attr_string "firstname").
@@ -29,15 +29,21 @@ Notation p_pid := (Attr_Z "p.pid").
 Notation m_mid := (Attr_Z "m.mid").
 
 
-Definition persons := Fset.mk_set (A TNull) (p_pid :: firstname :: lastname :: nil).
+Definition role_attr_list := r_mid :: r_pid :: name :: nil.
+Definition director_attr_list := d_mid :: d_pid :: nil.
+Definition persons_attr_list := p_pid :: firstname :: lastname :: nil.
+Definition movie_attr_list := m_mid :: title :: year :: runtime :: rank :: nil.
 
-(* Je mozne si nejak vypsat obsah persons Fset?  *)
+Definition role_key_list := r_mid :: r_pid :: nil.
+Definition director_key_list := d_mid :: d_pid :: nil.
+Definition persons_key_list := p_pid :: nil.
+Definition movie_key_list := m_mid :: nil.
 
 (* role: mid, pid, name *)
 Definition mk_role mid pid n :=
   mk_tuple 
     TNull
-    (Fset.mk_set _ (r_mid :: r_pid :: name :: nil))
+    (Fset.mk_set _ role_attr_list)
     (fun a => match a with
               | r_mid => Value_Z (Some mid)
               | r_pid => Value_Z (Some pid)
@@ -62,7 +68,7 @@ Definition roles :=
 Definition mk_director mid pid :=
   mk_tuple 
     TNull
-    (Fset.mk_set _ (d_mid :: d_pid :: nil))
+    (Fset.mk_set _ director_attr_list)
     (fun a => match a with
               | d_mid => Value_Z (Some mid)
               | d_pid => Value_Z (Some pid)
@@ -82,7 +88,7 @@ Definition directors :=
 Definition mk_people pid f l :=
   mk_tuple
     TNull
-    (Fset.mk_set _ (p_pid :: firstname :: lastname :: nil))
+    (Fset.mk_set _ persons_attr_list)
     (fun a => match a with
               | p_pid => Value_Z (Some pid)
               | firstname => Value_string (Some f)
@@ -106,11 +112,12 @@ Definition people :=
     :: nil.
 
 
+
     (* movie: mid, title, year, runtime, rank *)
 Definition mk_movie mid t y rt rk :=
   mk_tuple
     TNull
-    (Fset.mk_set _ (m_mid :: title :: year :: runtime :: rank :: nil))
+    (Fset.mk_set _ movie_attr_list)
     (fun a => match a with
               | m_mid => Value_Z (Some mid)
               | title => Value_string (Some t)
@@ -149,14 +156,16 @@ We pass the TNull implementation to the call of each function wotking with the i
 
 
 
+
+
 Definition create_schema :=
 create_table
   (create_table
      (create_table
-        (create_table  db0 (Rel "role") (r_mid :: r_pid :: name :: nil))
-        (Rel "director") (d_mid :: d_pid :: nil))
-     (Rel "people") (p_pid :: firstname :: lastname :: nil))
-  (Rel "movie") (m_mid :: title :: year :: runtime :: rank :: nil).
+        (create_table  db0 (Rel "role") role_attr_list role_key_list)
+        (Rel "director") director_attr_list director_key_list)
+     (Rel "people") persons_attr_list persons_key_list)
+  (Rel "movie") movie_attr_list movie_key_list.
 
 Definition create_db roles directors people movies :=
   insert_tuples_into 
@@ -191,6 +200,7 @@ Definition JoinWithoutAlias (tablename : string) f := Join_Item (Inner_Join) (Sq
 
 Definition basesort_map := _basesort TNull db_movie.
 Definition database_map := _instance TNull db_movie.
+Definition pk_map := _pk TNull db_movie.
 (* Notation basessort := _basesort TNull db_movie. -- Proc toto nemohu udelat? *)
 Definition bool_type := (Bool.b (Tuple.B TNull)).
 Definition sql_true_formula := Sql_True TNull (sql_query_ext TNull relname).
@@ -246,3 +256,6 @@ Definition f7 := Sql_Pred (query TNull relname) p7
 Definition j7 := sql_query_ext_to_alg basesort_map (Sql_Table_Ext TNull (Rel "director")).
 Definition fr7 := sql_query_ext_to_alg basesort_map (Sql_Table_Ext TNull (Rel "movie")).
 Compute N_Q_NaturalJoin fr7 ((f7, j7) :: nil).
+
+
+(* Jak udelat self-join? *)

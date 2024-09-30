@@ -80,7 +80,6 @@ Arguments Sql_Exists {T}.
 Notation att_renaming_item := (att_renaming_item T).
 
 Inductive join_type : Type :=
-  | Cross_Join
   | Inner_Join
   (* | Outer_Left_Join *)
   (* | Outer_Right_Join *)
