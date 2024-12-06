@@ -154,14 +154,14 @@ Record db_state_ext_ : Type :=
       _relnames : list relname;
       _basesort : relname -> Fset.set (A T);
       _instance : relname -> Febag.bag (Fecol.CBag (CTuple T));
-      _pk : relname -> Fset.set (A T)
+      _ucc : relname -> Fset.set (A T)
     }.
 
 Definition show_state_ (db : db_state_ext_) :=
   (_relnames db,
    List.map (fun r => (r, Fset.elements _ (_basesort db r))) (_relnames db),
    List.map (fun r => (r, show_bag_tuples (_instance db r))) (_relnames db),
-   List.map (fun r => (r, Fset.elements _ (_basesort db r))) (_relnames db)).
+   List.map (fun r => (r, Fset.elements _ (_ucc db r))) (_relnames db)).
 
 Definition init_db_ext_ :=
   mk_state
@@ -174,7 +174,7 @@ Definition create_table_
            (* old state *) db
            (* new table name *) t
            (* new table sort *) st
-           (* primary keys *) pk
+           (* unique column combination *) ucc
             :=
   mk_state
     (t :: _relnames db)
@@ -186,8 +186,8 @@ Definition create_table_
     (_instance db)
     (fun x =>
        match Oset.compare ORN x t with
-         | Eq => Fset.mk_set (A T) pk
-         |_ => _pk db x
+         | Eq => Fset.mk_set (A T) ucc
+         |_ => _ucc db x
        end).
 
 Definition insert_tuple_into_
@@ -203,7 +203,7 @@ Definition insert_tuple_into_
        | Eq => Febag.add (Fecol.CBag (CTuple T)) tpl (_instance db tbl)
        |_ => _instance db x
        end)
-    (_pk db).
+    (_ucc db).
 
 Fixpoint insert_tuples_into_
            (* old state *) db

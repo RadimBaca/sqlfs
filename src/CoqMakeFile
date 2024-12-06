@@ -7,7 +7,7 @@
 ##         #     GNU Lesser General Public License Version 2.1          ##
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
-## GNUMakefile for Coq 8.15.0
+## GNUMakefile for Coq 8.15.2
 
 # For debugging purposes (must stay here, don't move below)
 INITIAL_VARS := $(.VARIABLES)
@@ -108,9 +108,9 @@ COQMKFILE ?= "$(COQBIN)coq_makefile"
 OCAMLLIBDEP ?= "$(COQBIN)ocamllibdep"
 
 # Timing scripts
-COQMAKE_ONE_TIME_FILE ?= "$(COQBIN)/coq-makefile-make-one-time-file"
-COQMAKE_BOTH_TIME_FILES ?= "$(COQBIN)/coq-makefile-make-both-time-files"
-COQMAKE_BOTH_SINGLE_TIMING_FILES ?= "$(COQBIN)/coq-makefile-make-both-single-timing-files"
+COQMAKE_ONE_TIME_FILE ?= "$(COQCORELIB)/tools/make-one-time-file.py"
+COQMAKE_BOTH_TIME_FILES ?= "$(COQCORELIB)/tools/make-both-time-files.py"
+COQMAKE_BOTH_SINGLE_TIMING_FILES ?= "$(COQCORELIB)/tools/make-both-single-timing-files.py"
 BEFORE ?=
 AFTER ?=
 
@@ -257,7 +257,7 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
 COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
-COQMAKEFILE_VERSION:=8.15.0
+COQMAKEFILE_VERSION:=8.15.2
 
 # COQ_SRC_SUBDIRS is for user-overriding, usually to add
 # `user-contrib/Foo` to the includes, we keep COQCORE_SRC_SUBDIRS for

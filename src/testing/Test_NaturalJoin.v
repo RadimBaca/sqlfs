@@ -28,6 +28,8 @@ Notation d_pid := (Attr_Z "d.pid").
 Notation p_pid := (Attr_Z "p.pid").
 Notation m_mid := (Attr_Z "m.mid").
 
+Print attribute.
+
 
 Definition persons := Fset.mk_set (A TNull) (p_pid :: firstname :: lastname :: nil).
 
@@ -57,6 +59,7 @@ Definition roles :=
     :: mk_role 2139 1805 "'Maxim' de Winter"
     :: mk_role 2139 1806 "Mrs. de Winter"
     :: nil.
+
 
 (* director: mid, pid *)
 Definition mk_director mid pid :=

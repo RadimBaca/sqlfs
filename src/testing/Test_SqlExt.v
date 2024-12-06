@@ -34,10 +34,10 @@ Definition director_attr_list := d_mid :: d_pid :: nil.
 Definition persons_attr_list := p_pid :: firstname :: lastname :: nil.
 Definition movie_attr_list := m_mid :: title :: year :: runtime :: rank :: nil.
 
-Definition role_key_list := r_mid :: r_pid :: nil.
-Definition director_key_list := d_mid :: d_pid :: nil.
-Definition persons_key_list := p_pid :: nil.
-Definition movie_key_list := m_mid :: nil.
+Definition role_ucc_list := r_mid :: r_pid :: nil.
+Definition director_ucc_list := d_mid :: d_pid :: nil.
+Definition persons_ucc_list := p_pid :: nil.
+Definition movie_ucc_list := m_mid :: nil.
 
 (* role: mid, pid, name *)
 Definition mk_role mid pid n :=
@@ -162,10 +162,10 @@ Definition create_schema :=
 create_table
   (create_table
      (create_table
-        (create_table  db0 (Rel "role") role_attr_list role_key_list)
-        (Rel "director") director_attr_list director_key_list)
-     (Rel "people") persons_attr_list persons_key_list)
-  (Rel "movie") movie_attr_list movie_key_list.
+        (create_table  db0 (Rel "role") role_attr_list role_ucc_list)
+        (Rel "director") director_attr_list director_ucc_list)
+     (Rel "people") persons_attr_list persons_ucc_list)
+  (Rel "movie") movie_attr_list movie_ucc_list.
 
 Definition create_db roles directors people movies :=
   insert_tuples_into 

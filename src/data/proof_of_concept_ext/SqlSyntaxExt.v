@@ -46,6 +46,7 @@ Definition init_db := init_db_ext_ TNull.
 Definition create_table := create_table_ TNull.
 Definition insert_tuples_into := insert_tuples_into_ TNull.
 
+
 Register db_state as datacert.syntax.db_state.
 Register create_table as datacert.syntax.create_table.
 
