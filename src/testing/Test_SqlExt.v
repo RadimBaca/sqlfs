@@ -200,10 +200,21 @@ Definition JoinWithoutAlias (tablename : string) f := Join_Item (Inner_Join) (Sq
 
 Definition basesort_map := _basesort TNull db_movie.
 Definition database_map := _instance TNull db_movie.
-Definition pk_map := _pk TNull db_movie.
 (* Notation basessort := _basesort TNull db_movie. -- Proc toto nemohu udelat? *)
 Definition bool_type := (Bool.b (Tuple.B TNull)).
 Definition sql_true_formula := Sql_True TNull (sql_query_ext TNull relname).
+
+
+(* Projection *)
+Definition Proj s (b : Febag.bag (Fecol.CBag (CTuple TNull))) := 
+    Febag.map _  (Fecol.CBag (CTuple TNull)) (fun t => projection TNull (env_t TNull nil t) (Select_List TNull s)) b.
+
+
+Definition m_s := (_Select_List _ (Select_As _ (A_Expr _ (F_Dot TNull m_mid)) (m_mid) :: nil)).
+Definition r_s := (_Select_List _ (Select_As _ (A_Expr _ (F_Dot TNull r_mid)) (r_mid) :: nil)).
+
+Compute Proj m_s (_instance TNull db_movie (Rel "movie")).
+Compute Proj r_s (_instance TNull db_movie (Rel "role")).
 
 
 
@@ -258,4 +269,133 @@ Definition fr7 := sql_query_ext_to_alg basesort_map (Sql_Table_Ext TNull (Rel "m
 Compute N_Q_NaturalJoin fr7 ((f7, j7) :: nil).
 
 
-(* Jak udelat self-join? *)
+(* Self-join S1 *)
+(* select m1.mid, m1.title from movie m1, movie m2 where m1.mid = m2.mid *)
+
+Definition s1 := _Sql_Select
+(__Select_List
+(_Select_As (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")))
+     (Attr_Z "m1_m_mid")
+   :: _Select_As (_A_Expr (__Sql_Dot (Attr_string "m1_title")))
+        (Attr_string "m1_title") :: nil))
+(_From_Item (_Sql_Table (Rel "movie"))
+   (_Att_Ren_List
+      (_Att_As (Attr_Z "m.mid") (Attr_Z "m1_m_mid")
+       :: _Att_As (Attr_string "title") (Attr_string "m1_title")
+          :: nil))
+ :: _From_Item (_Sql_Table (Rel "movie"))
+      (_Att_Ren_List
+         (_Att_As (Attr_Z "m.mid") (Attr_Z "m2_m_mid")
+          :: _Att_As (Attr_string "title") (Attr_string "m2_title")
+             :: nil)) :: nil)
+  (_Sql_Pred (Values.Predicate "=")
+     (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid"))
+      :: _A_Expr (__Sql_Dot (Attr_Z "m2_m_mid")) :: nil)) _Group_Fine _Sql_True.
+
+
+Compute eval_sql_query basesort_map database_map _ _ nil s1.
+
+(* Definition mid_attr_list := _Select_List TNull
+(_Select_As (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")))
+     (Attr_Z "m1_m_mid")
+   :: nil).
+
+Definition ucc_test t := unique_value_sql_table database_map mid_attr_list (Rel t). *)
+
+Theorem theq : forall basesort instance t ucc_attr bt tuple,
+  let attr_list := _Select_List TNull
+      (_Select_As (_A_Expr (__Sql_Dot (Attr_Z ucc_attr)))
+          (Attr_Z ucc_attr)
+        :: nil) in
+  well_sorted_sql_table TNull basesort instance ->
+  unique_value_sql_table instance attr_list (Rel t) ->
+  let s1 := _Sql_Select
+      (__Select_List
+      (_Select_As (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")))
+           (Attr_Z "m1_m_mid")
+         :: _Select_As (_A_Expr (__Sql_Dot (Attr_string "m1_title")))
+              (Attr_string "m1_title") :: nil))
+      (_From_Item (_Sql_Table (Rel t))
+         (_Att_Ren_List
+            (_Att_As (Attr_Z ucc_attr) (Attr_Z "m1_m_mid")
+             :: _Att_As (Attr_string "title") (Attr_string "m1_title")
+                :: nil))
+       :: _From_Item (_Sql_Table (Rel t))
+            (_Att_Ren_List
+               (_Att_As (Attr_Z ucc_attr) (Attr_Z "m2_m_mid")
+                :: _Att_As (Attr_string "title") (Attr_string "m2_title")
+                   :: nil)) :: nil)
+        (_Sql_Pred (Values.Predicate "=")
+           (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid"))
+            :: _A_Expr (__Sql_Dot (Attr_Z "m2_m_mid")) :: nil)) _Group_Fine _Sql_True in 
+  let s2 := _Sql_Select
+    (__Select_List
+      (_Select_As (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")))
+          (Attr_Z "m1_m_mid")
+        :: _Select_As (_A_Expr (__Sql_Dot (Attr_string "m1_title")))
+              (Attr_string "m1_title")
+            :: _Select_As (_A_Expr (__Sql_Dot (Attr_string "m1_title")))
+                (Attr_string "m1_title") :: nil))
+    (_From_Item (_Sql_Table (Rel t))
+        (_Att_Ren_List
+          (_Att_As (Attr_Z ucc_attr) (Attr_Z "m1_m_mid")
+            :: _Att_As (Attr_string "title") (Attr_string "m1_title")
+              :: nil)) :: nil)
+    (_Sql_Pred (Values.Predicate "notnull")
+        (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")) :: nil)) _Group_Fine _Sql_True      
+  in eval_sql_query basesort instance bt tuple nil s1 =BE=
+    eval_sql_query basesort instance bt tuple nil s2.
+Proof.
+Admitted.
+
+
+      
+(* S2 that is equivalent to S1 *)
+(* select m1.mid, m1.title from movie m1 where m1.mid is not *)
+Definition s2 := _Sql_Select
+(__Select_List
+ (_Select_As (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")))
+      (Attr_Z "m1_m_mid")
+    :: _Select_As (_A_Expr (__Sql_Dot (Attr_string "m1_title")))
+         (Attr_string "m1_title")
+       :: _Select_As (_A_Expr (__Sql_Dot (Attr_string "m1_title")))
+            (Attr_string "m1_title") :: nil))
+(_From_Item (_Sql_Table (Rel "movie"))
+   (_Att_Ren_List
+      (_Att_As (Attr_Z "m.mid") (Attr_Z "m1_m_mid")
+       :: _Att_As (Attr_string "title") (Attr_string "m1_title")
+          :: nil)) :: nil)
+(_Sql_Pred (Values.Predicate "notnull")
+   (_A_Expr (__Sql_Dot (Attr_Z "m1_m_mid")) :: nil)) _Group_Fine _Sql_True.
+
+
+Compute eval_sql_query basesort_map database_map _ _ nil s2.
+
+Fixpoint eliminate_self_join (q : sql_query TNull relname) : sql_query TNull relname :=
+  match q with
+  | Sql_Select sel from where_clause group_by having =>
+      let new_from :=
+        filter_map
+          (fun fi =>
+             match fi with
+             | From_Item (Sql_Table _ rel1) (Att_Ren_List ren1) =>
+                 match from with
+                 | From_Item (Sql_Table _ rel2) (Att_Ren_List ren2) :: rest =>
+                     if relname_eqb rel1 rel2 && renaming_eqb ren1 ren2 then None
+                     else Some fi
+                 | _ => Some fi
+                 end
+             | _ => Some fi
+             end)
+          from
+      in
+      let new_where :=
+        match where_clause with
+        | Sql_Pred (Predicate "=") (A_Expr (Sql_Dot a1) :: A_Expr (Sql_Dot a2) :: nil) =>
+            if attribute_eqb a1 a2 then Sql_True else where_clause
+        | _ => where_clause
+        end
+      in
+      Sql_Select sel new_from new_where group_by having
+  | _ => q
+  end.

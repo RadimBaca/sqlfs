@@ -251,6 +251,22 @@ Definition interp_predicate p :=
             match string_compare s1 s2 with Eq => false3 | _ => true3 end
           | _ => unknown3
         end
+    | Predicate "isnull" =>
+        fun l =>
+          match l with
+          | Value_string None :: nil
+          | Value_Z None :: nil
+          | Value_bool None :: nil => true3
+          | _ => false3
+        end
+    | Predicate "notnull" =>
+        fun l =>
+          match l with
+          | Value_string None :: nil
+          | Value_Z None :: nil
+          | Value_bool None :: nil => false3
+          | _ => true3
+        end
    | _ => fun _ => unknown3
   end.
 

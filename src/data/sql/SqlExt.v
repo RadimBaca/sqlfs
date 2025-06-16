@@ -333,6 +333,10 @@ Definition sql_query_ext_to_sql_query_aux (sq : sql_query_ext) : sql_query T rel
 End Sec1.
 
 
+
+
+
+
 Section Sec2.
 
 Variable default_relname : relname.
@@ -346,5 +350,21 @@ Fixpoint sql_query_ext_to_sql_query_rec (n : nat) (sq : sql_query_ext) : sql_que
 End Sec2.
 
 *)
+
+Definition bag_projection s (b : bagT) := 
+    Febag.map _  BTupleT (fun t => projection T (env_t T nil t) (Select_List s)) b.
+
+
+Definition unique_value_sql_table ucc tbl:=
+  forall t, t inBE (bag_projection ucc (instance tbl)) -> Febag.nb_occ BTupleT t (instance tbl) = 1%N.
+
+
+Theorem ucc_self_join_redundancy : 
+well_sorted_sql_table T basesort instance ->
+forall env q1 q2,
+   eval_sql_query_ext env q1 =BE= eval_sql_query_ext env q2.
+Proof.
+Abort.
+
 
 End Sec.
